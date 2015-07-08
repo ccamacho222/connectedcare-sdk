@@ -16,14 +16,14 @@ namespace SnapMD.ConnectedCare.Sdk
 {
     public class PaymentsApi : ApiCall
     {
-        public PaymentsApi(string baseUrl, string bearerToken, int hospitalId, string developerId, string apiKey, IWebClient webClient)
-            : base(baseUrl, webClient, bearerToken, developerId, apiKey)
+        public PaymentsApi(string baseUri, string bearerToken, int hospitalId, string developerId, string apiKey, IWebClient webClient)
+            : base(baseUri, webClient, bearerToken, developerId, apiKey)
         {
             HospitalId = hospitalId;
         }
 
-        public PaymentsApi(string baseUrl, int hospitalId, IWebClient webClient)
-            : base(baseUrl, webClient)
+        public PaymentsApi(string baseUri, int hospitalId, IWebClient webClient)
+            : base(baseUri, webClient)
         {
             HospitalId = hospitalId;
         }

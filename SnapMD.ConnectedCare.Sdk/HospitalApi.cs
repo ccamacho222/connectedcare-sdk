@@ -17,8 +17,8 @@ namespace SnapMD.ConnectedCare.Sdk
 {
     public class HospitalApi : ApiCall
     {
-        public HospitalApi(string baseUrl, string bearerToken, string developerId, string apiKey, IWebClient client)
-            : base(baseUrl, client, bearerToken, developerId, apiKey)
+        public HospitalApi(string baseUri, string bearerToken, string developerId, string apiKey, IWebClient client)
+            : base(baseUri, client, bearerToken, developerId, apiKey)
         {
         }
 

@@ -16,10 +16,10 @@ namespace SnapMD.ConnectedCare.Sdk
     {
         private readonly Uri _baseUri;
 
-        public HospitalCall(string baseUrl, string bearerToken, string developerId, string apiKey)
-            : base(baseUrl, new SnapMD.ConnectedCare.Sdk.Wrappers.WebClientWrapper(new System.Net.WebClient()), bearerToken, developerId, apiKey)
+        public HospitalCall(string baseUri, string bearerToken, string developerId, string apiKey)
+            : base(baseUri, new SnapMD.ConnectedCare.Sdk.Wrappers.WebClientWrapper(new System.Net.WebClient()), bearerToken, developerId, apiKey)
         {
-            _baseUri = new Uri(baseUrl);
+            _baseUri = new Uri(baseUri);
         }
 
         public string GetHospitalAddress()

@@ -14,8 +14,8 @@ namespace SnapMD.ConnectedCare.Sdk.SystemService
 {
     public class SystemServiceApi : ApiCall
     {
-        public SystemServiceApi(string baseUrl, string bearerToken, string developerId, string apiKey)
-            : base(baseUrl, new SnapMD.ConnectedCare.Sdk.Wrappers.WebClientWrapper(new System.Net.WebClient()), bearerToken, developerId, apiKey)
+        public SystemServiceApi(string baseUri, string bearerToken, string developerId, string apiKey)
+            : base(baseUri, new SnapMD.ConnectedCare.Sdk.Wrappers.WebClientWrapper(new System.Net.WebClient()), bearerToken, developerId, apiKey)
         {
         }
 
