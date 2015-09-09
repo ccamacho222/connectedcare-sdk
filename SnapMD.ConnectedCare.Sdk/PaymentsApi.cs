@@ -9,41 +9,45 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 using Newtonsoft.Json.Linq;
+using SnapMD.ConnectedCare.ApiModels;
 using SnapMD.ConnectedCare.Sdk.Models;
+using SnapMD.ConnectedCare.Sdk.Interfaces;
 
 namespace SnapMD.ConnectedCare.Sdk
 {
     public class PaymentsApi : ApiCall
     {
-        public PaymentsApi(string baseUrl, string bearerToken, int hospitalId, string developerId, string apiKey)
-            : base(baseUrl, bearerToken, developerId, apiKey)
+        public PaymentsApi(string baseUrl, string bearerToken, int hospitalId, string developerId, string apiKey, IWebClient webClient)
+            : base(baseUrl, webClient, bearerToken, developerId, apiKey)
         {
             HospitalId = hospitalId;
         }
 
-        public PaymentsApi(string baseUrl, int hospitalId)
-            : base(baseUrl)
+        public PaymentsApi(string baseUrl, int hospitalId, IWebClient webClient)
+            : base(baseUrl, webClient)
         {
             HospitalId = hospitalId;
         }
 
         public int HospitalId { get; private set; }
 
-        public JObject GetCustomerProfile(int userId)
+        public ApiResponseV2<CustomerPaymentInfo> GetCustomerProfile(int? patientUserId)
         {
-            var result = MakeCall(string.Format("patients/{0}/payments", userId));
+            //API looks so strange 
+            var result = MakeCall<ApiResponseV2<CustomerPaymentInfo>>(string.Format("v2/patients/{0}/payments", patientUserId));
             return result;
         }
 
-        public JObject RegisterProfile(int userId, object paymentData)
+        public ApiResponseV2<PaymentProfile> RegisterProfile(object paymentData)
         {
-            var result = Post(string.Format("patients/{0}/payments", userId), paymentData);
+            //hospital/{hospitalId}/payments/{userId}
+            var result = Post<ApiResponseV2<PaymentProfile>>(string.Format("v2/patients/payments"), paymentData);
             return result;
         }
 
-        public ApiResponse GetPaymentStatus(int consultationId)
+        public ApiResponseV2<bool> GetPaymentStatus(int consultationId)
         {
-            var result = MakeCall<ApiResponse>(string.Format("patients/copay/{0}/paymentstatus", consultationId));
+            var result = MakeCall<ApiResponseV2<bool>>(string.Format("v2/patients/copay/{0}/paymentstatus", consultationId));
             return result;
         }
     }

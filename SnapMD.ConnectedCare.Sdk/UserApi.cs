@@ -9,23 +9,31 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 using System;
+using SnapMD.ConnectedCare.Sdk.Models;
+//using SnapMD.ConnectedCare.ApiModels;
+using Newtonsoft.Json.Linq;
 
 namespace SnapMD.ConnectedCare.Sdk
 {
     public class UserApi : ApiCall
     {
-        public UserApi(string baseUrl, string bearerToken, string developerId, string apiKey)
-            : base(baseUrl, bearerToken, developerId, apiKey)
+        public UserApi(string baseUrl, string bearerToken, string developerId, string apiKey, SnapMD.ConnectedCare.Sdk.Interfaces.IWebClient client)
+            : base(baseUrl, client, bearerToken, developerId, apiKey)
         {
         }
 
         public int? GetUserId()
         {
-            var o = MakeCall("account/user");
-            if (o != null && o["id"] != null)
+            var response = MakeCall("v2/account/user");
+
+
+            var dataEnumerator = response.ToObject<ApiResponseV2<SerializableUser>>();
+            if (dataEnumerator.Data != null)
             {
-                var userId = Convert.ToInt32(o["id"]);
-                return userId;
+                foreach (var entry in dataEnumerator.Data)
+                {
+                    return entry.id;
+                }
             }
 
             return null;

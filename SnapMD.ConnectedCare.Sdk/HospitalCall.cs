@@ -17,7 +17,7 @@ namespace SnapMD.ConnectedCare.Sdk
         private readonly Uri _baseUri;
 
         public HospitalCall(string baseUrl, string bearerToken, string developerId, string apiKey)
-            : base(baseUrl, bearerToken, developerId, apiKey)
+            : base(baseUrl, new Wrappers.WebClientWrapper(new System.Net.WebClient()), bearerToken, developerId, apiKey)
         {
             _baseUri = new Uri(baseUrl);
         }

@@ -13,29 +13,38 @@ using System.Diagnostics;
 using System.Net;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SnapMD.ConnectedCare.Sdk.Interfaces;
 
 namespace SnapMD.ConnectedCare.Sdk
 {
+    //replace all calls and references to webclient, with WebClientWrapper, 
+    //and route them through the wrapper.
+
     public class ApiCall
     {
         private readonly string _apiKey;
-        private readonly string _baseUrl;
+        private readonly Uri _baseUri;
         private readonly string _bearerToken;
         private readonly string _developerId;
 
-        public ApiCall(string baseUrl, string bearerToken = null, string developerId = null, string apiKey = null)
+        public IWebClient WebClientInstance { get; set; }
+
+        public ApiCall(string baseUrl, IWebClient client, string bearerToken = null, string developerId = null, string apiKey = null)
         {
-            _baseUrl = baseUrl;
+            _baseUri = new Uri(baseUrl);
             _bearerToken = bearerToken;
             _developerId = developerId;
             _apiKey = apiKey;
             RequiresAuthentication = true;
+
+            WebClientInstance = client;
         }
 
-        public ApiCall(string baseUrl)
+        public ApiCall(string baseUrl, IWebClient client)
         {
-            _baseUrl = baseUrl;
+            _baseUri = new Uri(baseUrl);
             RequiresAuthentication = true;
+            WebClientInstance = client;
         }
 
         public bool RequiresAuthentication { get; set; }
@@ -44,12 +53,11 @@ namespace SnapMD.ConnectedCare.Sdk
 
         protected virtual T MakeCall<T>(string apiPath)
         {
-            var baseUrl = new Uri(_baseUrl);
-            var url = new Uri(baseUrl, apiPath);
+            var url = new Uri(_baseUri, apiPath);
             try
             {
                 var data = MakeCall(wc => wc.DownloadString(url));
-                return JsonConvert.DeserializeObject<T>(data.ToString());
+                return data.ToObject<T>();
             }
             catch (Exception ex)
             {
@@ -57,10 +65,14 @@ namespace SnapMD.ConnectedCare.Sdk
             }
         }
 
+        protected virtual JObject MakeCall(string pathFormat, params object[] arguments)
+        {
+            return MakeCall(string.Format(pathFormat, arguments));
+        }
+
         protected virtual JObject MakeCall(string apiPath)
         {
-            var baseUrl = new Uri(_baseUrl);
-            var url = new Uri(baseUrl, apiPath);
+            var url = new Uri(_baseUri, apiPath);
             try
             {
                 return MakeCall(wc => wc.DownloadString(url));
@@ -71,25 +83,27 @@ namespace SnapMD.ConnectedCare.Sdk
             }
         }
 
-        protected JObject MakeCall(Func<WebClient, string> executeFunc)
+
+        protected JObject MakeCall(Func<IWebClient, string> executeFunc)
         {
-            using (var wc = new WebClient())
-            {
-                // Allow domains we don't have a certificate for
-                ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
-                SetHeaders(wc);
-                return MakeCall(wc, executeFunc);
-            }
+            // Allow domains we don't have a certificate for
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            SetHeaders(WebClientInstance);
+            return MakeCall(WebClientInstance, executeFunc);
         }
 
-        private void SetHeaders(WebClient wc)
+        private void SetHeaders(IWebClient wc)
         {
-            AddHeader(wc, "Authorization", "Bearer " + _bearerToken);
+            if (RequiresAuthentication || _bearerToken != null)
+            {
+                AddHeader(wc, "Authorization", "Bearer " + _bearerToken);
+            }
+
             AddHeader(wc, "X-Developer-Id", _developerId);
             AddHeader(wc, "X-Api-Key", _apiKey);
         }
 
-        private void AddHeader(WebClient wc, string name, string value)
+        private void AddHeader(IWebClient wc, string name, string value)
         {
             if (!string.IsNullOrEmpty(value))
             {
@@ -119,7 +133,7 @@ namespace SnapMD.ConnectedCare.Sdk
             }
         }
 
-        protected JObject MakeCall(WebClient wc, Func<WebClient, string> executeFunc)
+        protected JObject MakeCall(IWebClient wc, Func<IWebClient, string> executeFunc)
         {
             try
             {
@@ -155,20 +169,21 @@ namespace SnapMD.ConnectedCare.Sdk
 
         private JObject UploadData(string apiPath, string method, object data)
         {
-            var baseUrl = new Uri(_baseUrl);
-            var url = new Uri(baseUrl, apiPath);
+            var url = new Uri(_baseUri, apiPath);
             try
             {
                 return MakeCall(wc =>
                 {
                     // Allow domains we don't have a certificate for
                     ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+
                     if (RequiresAuthentication)
                     {
                         wc.Headers[HttpRequestHeader.Authorization] = "Bearer " + _bearerToken;
                     }
 
                     wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+
                     return wc.UploadString(url, method, JsonConvert.SerializeObject(data));
                 });
             }
@@ -177,5 +192,76 @@ namespace SnapMD.ConnectedCare.Sdk
                 throw new SnapSdkException("Unable to load api at url: " + url, ex);
             }
         }
+
+        #region <T>
+
+        protected virtual T Put<T>(string apiPath, object data) where T : class
+        {
+            return UploadData<T>(apiPath, "PUT", data);
+        }
+
+        protected virtual T Post<T>(string apiPath, object data) where T : class
+        {
+            return UploadData<T>(apiPath, "POST", data);
+        }
+
+        protected T MakeCall<T>(Func<IWebClient, string> executeFunc) where T : class
+        {
+            // Allow domains we don't have a certificate for
+            ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+            SetHeaders(WebClientInstance);
+            return MakeCall<T>(WebClientInstance, executeFunc);
+        }
+        private T UploadData<T>(string apiPath, string method, object data) where T : class
+        {
+            var url = new Uri(_baseUri, apiPath);
+            try
+            {
+                return MakeCall<T>(wc =>
+                {
+                    // Allow domains we don't have a certificate for
+                    ServicePointManager.ServerCertificateValidationCallback = delegate { return true; };
+
+                    if (RequiresAuthentication)
+                    {
+                        wc.Headers[HttpRequestHeader.Authorization] = "Bearer " + _bearerToken;
+                    }
+
+                    wc.Headers[HttpRequestHeader.ContentType] = "application/json";
+
+                    return wc.UploadString(url, method, JsonConvert.SerializeObject(data));
+                });
+            }
+            catch (Exception ex)
+            {
+                throw new SnapSdkException("Unable to load api at url: " + url, ex);
+            }
+        }
+
+        protected T MakeCall<T>(IWebClient wc, Func<IWebClient, string> executeFunc) where T : class
+        {
+            try
+            {
+                var responseBody = executeFunc.Invoke(wc);
+                if (!string.IsNullOrEmpty(responseBody))
+                {
+                    if (!responseBody.StartsWith("{"))
+                    {
+                        responseBody = string.Format("{{data:{0}}}", responseBody);
+                    }
+
+                    var o = JsonConvert.DeserializeObject<T>(responseBody);
+                    return o;
+                }
+            }
+            catch (WebException wex)
+            {
+                Parse404(wex);
+            }
+
+            return null;
+        }
+        #endregion
+
     }
 }

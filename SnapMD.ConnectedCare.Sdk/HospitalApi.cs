@@ -9,33 +9,45 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 using System;
+using System.Linq;
 using Newtonsoft.Json.Linq;
+using SnapMD.ConnectedCare.ApiModels;
+using SnapMD.ConnectedCare.Sdk.Interfaces;
+using SnapMD.ConnectedCare.Sdk.Models;
 
 namespace SnapMD.ConnectedCare.Sdk
 {
     public class HospitalApi : ApiCall
     {
-        public HospitalApi(string baseUrl, string bearerToken, string developerId, string apiKey)
-            : base(baseUrl, bearerToken, developerId, apiKey)
+        public HospitalApi(string baseUrl, string bearerToken, string developerId, string apiKey, IWebClient client)
+            : base(baseUrl, client, bearerToken, developerId, apiKey)
         {
         }
 
-        public string GetAddress()
+        /// <summary>
+        /// Gets the hospital address based on the current logged-in user's provider ID.
+        /// </summary>
+        /// <returns></returns>
+        public ApiResponseV2<HospitalAddress> GetAddress()
         {
-            var o = MakeCall("hospitaladdress");
-            return Convert.ToString(o["data"]);
+            var o = MakeCall<ApiResponseV2<HospitalAddress>>("v2/hospitaladdress");
+            return o;
         }
 
-        public string GetHospitalAddressById(int hospitalId)
+        /// <summary>
+        /// Gets the hospital address based on provider ID.
+        /// </summary>
+        /// <param name="hospitalId"></param>
+        /// <returns></returns>
+        public ApiResponseV2<HospitalAddress> GetAddress(int hospitalId)
         {
-            var o = MakeCall("HospitalAddress/" + hospitalId);
-            var data = o["data"];
-            return Convert.ToString(data["addressText"]);
+            var o = MakeCall<ApiResponseV2<HospitalAddress>>("v2/hospitaladdress/" + hospitalId);
+            return o;
         }
 
-        public JObject GetHospital()
+        public ApiResponseV2<HospitalInfo> GetHospital()
         {
-            var o = MakeCall("hospital");
+            var o = MakeCall<ApiResponseV2<HospitalInfo>>("v2/hospital");
             return o;
         }
     }
